@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>IT Calendar — Murodjon Qodirov</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;600;700&family=Roboto:wght@400;500;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #f8fafc;
+      --surface: #ffffff;
+      --ink: #1f1f1f;
+      --muted: #70757a;
+      --line: #dadce0;
+      --line-soft: #e8eaed;
+      --gutter: 64px;
+      --hour-h: 64px;
+      --start: 8.5; /* 08:30 */
+      --end: 18;
+      --hours: 9.5;
+
+      --c56: #0b8043;
+      --c56-bg: #e6f4ea;
+      --c56-bd: #81c995;
+
+      --c78: #1a73e8;
+      --c78-bg: #e8f0fe;
+      --c78-bd: #8ab4f8;
+
+      --cmath: #e37400;
+      --cmath-bg: #fef7e0;
+      --cmath-bd: #f6bf26;
+
+      --cprogram: #9334e6;
+      --cprogram-bg: #f3e8fd;
+      --cprogram-new: #00897b;
+      --cprogram-new-bg: #e0f2f1;
+
+      --conflict: #d93025;
+      --conflict-bg: #fce8e6;
+      --conflict-bd: #f28b82;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: "Roboto", "Google Sans", system-ui, sans-serif;
+      color: var(--ink);
+      background: var(--bg);
+      min-height: 100vh;
+    }
+
+    .app {
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: 1rem 1rem 2rem;
+    }
+
+    .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.75rem 1.25rem;
+      padding: 0.5rem 0.25rem 1rem;
+    }
+
+    .toolbar h1 {
+      font-size: 1.35rem;
+      font-weight: 500;
+      letter-spacing: -0.01em;
+    }
+
+    .toolbar h1 span {
+      color: var(--muted);
+      font-weight: 400;
+    }
+
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.65rem 1rem;
+      font-size: 0.8rem;
+      color: var(--muted);
+    }
+
+    .legend i {
+      display: inline-block;
+      width: 10px;
+      height: 10px;
+      border-radius: 2px;
+      margin-right: 0.35rem;
+      vertical-align: middle;
+    }
+
+    .legend .l56 { background: var(--c56); }
+    .legend .l78 { background: var(--c78); }
+    .legend .lmath { background: var(--cmath); }
+    .legend .lprogram { background: var(--cprogram); }
+    .legend .lprogram-new { background: var(--cprogram-new); }
+
+    .calendar {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 1px 2px rgba(60, 64, 67, 0.08), 0 2px 8px rgba(60, 64, 67, 0.06);
+    }
+
+    .days-header {
+      display: grid;
+      grid-template-columns: var(--gutter) repeat(6, 1fr);
+      border-bottom: 1px solid var(--line);
+      background: var(--surface);
+      position: sticky;
+      top: 0;
+      z-index: 5;
+    }
+
+    .corner {
+      border-right: 1px solid var(--line-soft);
+    }
+
+    .day-col-head {
+      text-align: center;
+      padding: 0.85rem 0.4rem 0.7rem;
+      border-right: 1px solid var(--line-soft);
+    }
+
+    .day-col-head:last-child { border-right: none; }
+
+    .day-name {
+      font-size: 0.7rem;
+      font-weight: 500;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    .day-num {
+      margin-top: 0.15rem;
+      font-size: 1.35rem;
+      font-weight: 400;
+      color: var(--ink);
+    }
+
+    .grid-wrap {
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: var(--gutter) repeat(6, minmax(120px, 1fr));
+      min-width: 840px;
+      position: relative;
+    }
+
+    .time-col {
+      position: relative;
+      height: calc(var(--hour-h) * var(--hours));
+      border-right: 1px solid var(--line);
+      background: #fafafa;
+    }
+
+    .time-label {
+      position: absolute;
+      right: 8px;
+      transform: translateY(-50%);
+      font-size: 0.68rem;
+      color: var(--muted);
+      font-variant-numeric: tabular-nums;
+      white-space: nowrap;
+    }
+
+    .day-col {
+      position: relative;
+      height: calc(var(--hour-h) * var(--hours));
+      border-right: 1px solid var(--line-soft);
+      background:
+        repeating-linear-gradient(
+          to bottom,
+          transparent 0,
+          transparent calc(var(--hour-h) - 1px),
+          var(--line-soft) calc(var(--hour-h) - 1px),
+          var(--line-soft) var(--hour-h)
+        );
+    }
+
+    .day-col:last-child { border-right: none; }
+
+    .half-line {
+      position: absolute;
+      left: 0;
+      right: 0;
+      border-top: 1px dotted #eceff1;
+      pointer-events: none;
+    }
+
+    .event {
+      position: absolute;
+      left: 3px;
+      right: 3px;
+      border-radius: 6px;
+      padding: 4px 7px;
+      overflow: hidden;
+      font-size: 0.72rem;
+      line-height: 1.25;
+      cursor: default;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.06);
+      transition: transform 0.15s ease, box-shadow 0.15s ease, z-index 0s;
+      z-index: 1;
+      animation: pop 0.35s ease both;
+    }
+
+    .event:hover {
+      transform: scale(1.02);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+      z-index: 3;
+    }
+
+    .event .title {
+      font-weight: 600;
+      font-size: 0.78rem;
+    }
+
+    .event .when {
+      color: inherit;
+      opacity: 0.85;
+      margin-top: 1px;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .event .group {
+      opacity: 0.9;
+      margin-top: 2px;
+    }
+
+    .event.g56 {
+      background: var(--c56-bg);
+      color: #137333;
+    }
+
+    .event.g78 {
+      background: var(--c78-bg);
+      color: #174ea6;
+    }
+
+    .event.gmath {
+      background: var(--cmath-bg);
+      color: #b06000;
+    }
+
+    .event.gprogram {
+      background: var(--cprogram-bg);
+      color: #7627bb;
+    }
+
+    .event.gprogram-new {
+      background: var(--cprogram-new-bg);
+      color: #00695c;
+    }
+
+    .event.conflict {
+      background: var(--conflict-bg);
+      color: #a50e0e;
+    }
+
+    /* Split overlapping events vertically */
+    .event.split-top,
+    .event.split-bottom {
+      padding-top: 3px;
+      padding-bottom: 3px;
+    }
+
+    .note {
+      margin-top: 0.9rem;
+      padding: 0.75rem 0.9rem;
+      background: #fce8e6;
+      color: #a50e0e;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      line-height: 1.4;
+    }
+
+    @keyframes pop {
+      from { opacity: 0; transform: translateY(6px) scale(0.98); }
+      to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
+    @media (max-width: 700px) {
+      :root {
+        --gutter: 48px;
+        --hour-h: 72px;
+      }
+      .toolbar h1 { font-size: 1.15rem; }
+      .event { font-size: 0.65rem; padding: 3px 4px 3px 5px; }
+      .event .title { font-size: 0.7rem; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <div class="toolbar">
+      <h1>IT dars calendari <span>· Murodjon Qodirov</span></h1>
+    </div>
+
+    <div class="calendar">
+      <div class="days-header">
+        <div class="corner"></div>
+        <div class="day-col-head">
+          <div class="day-name">Dushanba</div>
+          <div class="day-num">Du</div>
+        </div>
+        <div class="day-col-head">
+          <div class="day-name">Seshanba</div>
+          <div class="day-num">Se</div>
+        </div>
+        <div class="day-col-head">
+          <div class="day-name">Chorshanba</div>
+          <div class="day-num">Cho</div>
+        </div>
+        <div class="day-col-head">
+          <div class="day-name">Payshanba</div>
+          <div class="day-num">Pa</div>
+        </div>
+        <div class="day-col-head">
+          <div class="day-name">Juma</div>
+          <div class="day-num">Ju</div>
+        </div>
+        <div class="day-col-head">
+          <div class="day-name">Shanba</div>
+          <div class="day-num">Sha</div>
+        </div>
+      </div>
+
+      <div class="grid-wrap">
+        <div class="grid" id="grid">
+          <div class="time-col" id="timeCol"></div>
+          <div class="day-col" data-day="0"></div>
+          <div class="day-col" data-day="1"></div>
+          <div class="day-col" data-day="2"></div>
+          <div class="day-col" data-day="3"></div>
+          <div class="day-col" data-day="4"></div>
+          <div class="day-col" data-day="5"></div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    const START = 8.5; // 08:30
+    const END = 18;
+    const HOUR_H = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--hour-h')) || 64;
+
+    // Minutes helper: "08:30" -> decimal hours
+    function toHours(t) {
+      const [h, m] = t.split(':').map(Number);
+      return h + m / 60;
+    }
+
+    function topPx(start) {
+      return (toHours(start) - START) * HOUR_H;
+    }
+
+    function heightPx(start, end) {
+      return (toHours(end) - toHours(start)) * HOUR_H;
+    }
+
+    // day: 0=Du ... 5=Sha
+    const events = [
+      // Dushanba
+      { day: 0, start: '10:45', end: '11:40', title: 'IT', group: '7–8 B', cls: 'g78' },
+      { day: 0, start: '11:45', end: '12:40', title: 'IT', group: 'Math / Ing', cls: 'gmath' },
+
+      // Seshanba
+      { day: 1, start: '08:30', end: '09:25', title: 'IT', group: '5–6 B', cls: 'g56' },
+      { day: 1, start: '09:45', end: '10:40', title: 'IT', group: '7–8 B', cls: 'g78' },
+      { day: 1, start: '10:45', end: '11:40', title: 'IT', group: '5–6 B', cls: 'g56' },
+      { day: 1, start: '11:45', end: '12:40', title: 'IT', group: 'Math / Ing', cls: 'gmath' },
+      { day: 1, start: '14:00', end: '16:00', title: '', group: 'Juft 14:00 ( CSS)', cls: 'gprogram' },
+      { day: 1, start: '16:00', end: '18:00', title: '', group: 'Juft 16:00 ( yangi)', cls: 'gprogram-new' },
+
+      // Chorshanba
+      { day: 2, start: '09:45', end: '10:40', title: 'IT', group: '7–8 B', cls: 'g78' },
+      { day: 2, start: '11:45', end: '12:40', title: 'IT', group: 'Math / Ing', cls: 'gmath' },
+
+      // Payshanba
+      { day: 3, start: '08:30', end: '09:25', title: 'IT', group: '5–6 B', cls: 'g56' },
+      { day: 3, start: '10:45', end: '11:40', title: 'IT', group: '5–6 B', cls: 'g56' },
+      { day: 3, start: '11:45', end: '12:40', title: 'IT', group: 'Math / Ing', cls: 'gmath' },
+      { day: 3, start: '14:00', end: '16:00', title: '', group: 'Juft 14:00 ( CSS)', cls: 'gprogram' },
+      { day: 3, start: '16:00', end: '18:00', title: '', group: 'Juft 16:00 ( yangi)', cls: 'gprogram-new' },
+
+      // Juma
+      { day: 4, start: '11:45', end: '12:40', title: 'IT', group: 'Math / Ing', cls: 'gmath' },
+
+      // Shanba
+      { day: 5, start: '14:00', end: '16:00', title: '', group: 'Juft 14:00 ( CSS)', cls: 'gprogram' },
+      { day: 5, start: '16:00', end: '18:00', title: '', group: 'Juft 16:00 ( yangi)', cls: 'gprogram-new' },
+    ];
+
+    // Time labels: every hour from 9:00 to 18:00
+    const timeCol = document.getElementById('timeCol');
+    for (let h = 9; h <= 18; h++) {
+      const label = document.createElement('div');
+      label.className = 'time-label';
+      label.style.top = ((h - START) * HOUR_H) + 'px';
+      label.textContent = String(h).padStart(2, '0') + ':00';
+      timeCol.appendChild(label);
+    }
+    // Also show 08:30 start marker lightly
+    const startLabel = document.createElement('div');
+    startLabel.className = 'time-label';
+    startLabel.style.top = '8px';
+    startLabel.style.transform = 'none';
+    startLabel.textContent = '08:30';
+    timeCol.appendChild(startLabel);
+
+    // Half-hour dotted lines
+    document.querySelectorAll('.day-col').forEach((col) => {
+      for (let h = START + 0.5; h < END; h += 1) {
+        const line = document.createElement('div');
+        line.className = 'half-line';
+        line.style.top = ((h - START) * HOUR_H) + 'px';
+        col.appendChild(line);
+      }
+    });
+
+    // Place events
+    events.forEach((ev, i) => {
+      const col = document.querySelector(`.day-col[data-day="${ev.day}"]`);
+      const el = document.createElement('div');
+      el.className = `event ${ev.cls}`;
+      const eventTop = topPx(ev.start);
+      const eventHeight = Math.max(heightPx(ev.start, ev.end) - 2, 28);
+      const isSplit = ev.cls.includes('split-');
+      const renderedHeight = isSplit ? (eventHeight - 3) / 2 : eventHeight;
+      el.style.top = (eventTop + (ev.cls.includes('split-bottom') ? renderedHeight + 3 : 0)) + 'px';
+      el.style.height = renderedHeight + 'px';
+      el.style.animationDelay = (0.04 * i) + 's';
+      el.innerHTML = `
+        <div class="title">${ev.title ? ev.title + ' · ' : ''}${ev.group}</div>
+        <div class="when">${ev.start} – ${ev.end}</div>
+      `;
+      col.appendChild(el);
+    });
+  </script>
+</body>
+</html>
